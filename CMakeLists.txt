@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 4.0)
 project(lua LANGUAGES C)
 
 # Версия Lua
-set(LUA_VERSION 5.5.0)
-set(LUA_SOVERSION 5.5)
+set(LUA_VERSION 5.4.8)
+set(LUA_SOVERSION 5.4)
 
 # Ищем исходники Lua (можно в поддиректории или как внешний проект)
 file(GLOB LUA_SRCS lua-${LUA_VERSION}/src/*.c)
