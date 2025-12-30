@@ -1,43 +1,68 @@
 cmake_minimum_required(VERSION 4.0)
+project(lua LANGUAGES C)
 
+# Версия Lua
 set(LUA_VERSION 5.5.0)
+set(LUA_SOVERSION 5.5)
 
-set(TARGET lua)
+# Ищем исходники Lua (можно в поддиректории или как внешний проект)
+file(GLOB LUA_SRCS lua-${LUA_VERSION}/src/*.c)
+list(FILTER LUA_SRCS EXCLUDE REGEX "lua.c|luac.c$")  # исключаем исполняемые
 
-project(${TARGET} LANGUAGES C)
+add_library(lua ${LUA_SRCS})
+add_library(lua::lua ALIAS lua)
 
-file(GLOB LUA_SRC lua-${LUA_VERSION}/src/*.c)
-file(GLOB LUA_INC lua-${LUA_VERSION}/src/*.h)
-list(FILTER LUA_SRC EXCLUDE REGEX "lua.c|luac.c$")
+target_include_directories(lua PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lua-${LUA_VERSION}/src>
+    $<INSTALL_INTERFACE:include>
+)
 
-add_library(${TARGET} ${LUA_INC} ${LUA_SRC})
+set(LUA_PUBLIC_HEADERS
+    lua-${LUA_VERSION}/src/lua.h
+    lua-${LUA_VERSION}/src/lualib.h
+    lua-${LUA_VERSION}/src/lauxlib.h
+    lua-${LUA_VERSION}/src/luaconf.h
+)
 
-target_include_directories (${TARGET} PRIVATE lua-${LUA_VERSION})
+set_target_properties(lua PROPERTIES
+    VERSION ${LUA_VERSION}
+    SOVERSION ${LUA_SOVERSION}
+    PUBLIC_HEADER "${LUA_PUBLIC_HEADERS}"
+)
 
-#if (WIN32)
+# Установка
+include(GNUInstallDirs)
 
-    install(TARGETS ${TARGET}
-    EXPORT ${TARGET}Targets
-    FILE_SET HEADERS
-    LIBRARY DESTINATION lib/
-    ARCHIVE DESTINATION lib/
-    RUNTIME DESTINATION bin/
-    INCLUDES DESTINATION include/)
+install(TARGETS lua
+    EXPORT luaTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
-    include(CMakePackageConfigHelpers)
+install(EXPORT luaTargets
+    FILE luaTargets.cmake
+    NAMESPACE lua::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/lua
+)
 
-    write_basic_package_version_file(
-        "${TARGET}ConfigVersion.cmake"
-        VERSION ${LUA_VERSION}
-        COMPATIBILITY AnyNewerVersion)
+# Конфигурационный файл для find_package
+include(CMakePackageConfigHelpers)
 
-    install(EXPORT ${TARGET}Targets
-    FILE ${TARGET}Targets.cmake
-    DESTINATION lib/cmake/${TARGET})
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/luaConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/luaConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/lua
+)
 
-    install(FILES "${TARGET}Config.cmake" "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}ConfigVersion.cmake"
-        DESTINATION sdk/lib/cmake/${TARGET})
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/luaConfigVersion.cmake
+    VERSION ${LUA_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
 
-    install(FILES ${LUA_INC} DESTINATION include/)
-
-#else()
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/luaConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/luaConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/lua
+)
