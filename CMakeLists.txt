@@ -7,7 +7,7 @@ set(LUA_SOVERSION 5.4)
 
 # Ищем исходники Lua (можно в поддиректории или как внешний проект)
 file(GLOB LUA_SRCS lua-${LUA_VERSION}/src/*.c)
-list(FILTER LUA_SRCS EXCLUDE REGEX "lua.c|luac.c$")  # исключаем исполняемые
+list(REMOVE_ITEM LUA_SRCS "lua.c" "luac.c")  # исключаем исполняемые
 
 add_library(lua ${LUA_SRCS})
 add_library(lua::lua ALIAS lua)
